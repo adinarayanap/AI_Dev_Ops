@@ -1,0 +1,171 @@
+Fundamentals of Prompt Engineering
+1. Tokens
+
+Tokens are the building blocks of language models.
+
+A token can be a word, part of a word, or punctuation.
+
+Example:
+
+Sentence: “Deploy the app to Kubernetes.”
+
+Tokens: Deploy, the, app, to, Kubernetes, .
+
+Why it matters: Models have limits on how many tokens they can process (context window). If your prompt + output exceeds this, the model will cut off.
+
+👉 DevOps Use Case:
+When writing a long Terraform config, ensure your prompt doesn’t exceed token limits. You may break requests into smaller prompts.
+
+2. Temperature
+
+Controls creativity vs. determinism in outputs.
+
+Range: 0.0 – 1.0 (sometimes up to 2).
+
+Low (0–0.3): More precise and predictable.
+
+Medium (0.4–0.7): Balanced output.
+
+High (0.8–1.0+): Creative, random, less predictable.
+
+👉 DevOps Use Case:
+
+Low temp (0.2): Generate consistent Kubernetes YAML files.
+
+High temp (0.9): Brainstorm innovative DevOps pipeline ideas.
+
+3. Max Tokens
+
+Defines the maximum length of output the model can generate.
+
+Example: Setting max_tokens=50 ensures short responses.
+
+👉 DevOps Use Case:
+
+For CI/CD config snippets → keep max_tokens small (avoid verbose output).
+
+For full pipeline docs → allow more tokens.
+
+4. Top-p (Nucleus Sampling)
+
+Controls probability sampling of next words.
+
+Example:
+
+top-p = 0.9 → model considers only the top 90% likely words.
+
+top-p = 1.0 → considers all possible words.
+
+👉 DevOps Use Case:
+
+Use low top-p for structured configs (Terraform, YAML).
+
+Use higher top-p for brainstorming DevOps automation strategies.
+
+5. Frequency & Presence Penalties
+
+Frequency penalty: Reduces repeated words/phrases.
+
+Presence penalty: Encourages introducing new words/ideas.
+
+👉 DevOps Use Case:
+
+High frequency penalty avoids repeated lines in Bash scripts.
+
+High presence penalty encourages generating new CI/CD strategies.
+
+🔹 Prompting Techniques
+6. Zero-shot Prompting
+
+Ask the model directly without examples.
+
+Example:
+“Write a Bash script to restart Nginx if it fails.”
+
+👉 Useful for quick DevOps tasks.
+
+7. Few-shot Prompting
+
+Provide a few examples before asking the task.
+
+Example:
+
+Example 1:
+Input: Create regex for emails
+Output: ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$
+
+Example 2:
+Input: Create regex for IPv4
+Output: ^(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|[0-1]?[0-9]?[0-9])){3}$
+
+Now generate regex for phone numbers.
+
+
+👉 Great for consistent DevOps patterns (regex, YAML).
+
+8. N-shot Prompting
+
+Like few-shot, but with N examples.
+
+Helps train the model in-context with a style or format.
+
+Example: Provide 5 different Terraform snippets → then ask for another.
+
+👉 Ensures uniform style in infrastructure code.
+
+9. Chain-of-Thought (CoT) Prompting
+
+Ask the model to think step by step before answering.
+
+Example:
+“Explain step by step how a GitLab CI/CD pipeline runs tests before deployment.”
+
+👉 DevOps Use Case:
+
+Helps in debugging CI/CD pipelines.
+
+Produces clear documentation for junior engineers.
+
+🔹 Structured Prompt Writing
+10. Crafting Prompts for DevOps Use Cases
+
+Be clear, structured, and role-based.
+
+Use systematic format:
+
+Role: You are a DevOps engineer.
+Task: Generate a Helm chart for a Node.js app.
+Constraints: Use Kubernetes best practices, include liveness and readiness probes.
+Output: YAML file only.
+
+
+👉 This reduces hallucination and keeps answers production-ready.
+
+🔹 AI-Generated Configurations
+11. Regex
+
+AI can generate complex regex patterns in seconds.
+
+Example Prompt:
+“Write a regex to validate a password with 8–16 chars, 1 uppercase, 1 number, and 1 special character.”
+
+12. Bash Scripts
+
+Automate server operations.
+
+Example Prompt:
+“Write a bash script to monitor CPU usage and alert if >80%.”
+
+13. Terraform Scripts
+
+Automate infrastructure provisioning.
+
+Example Prompt:
+“Write a Terraform script to deploy an AWS EC2 with security groups allowing SSH & HTTP.”
+
+14. CI/CD Configurations
+
+Generate pipelines (GitLab, GitHub Actions, Jenkins).
+
+Example Prompt:
+“Create a GitLab CI/CD pipeline for a Python Flask app with build, test, and deploy stages.”
