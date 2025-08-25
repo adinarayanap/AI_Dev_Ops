@@ -1,1 +1,167 @@
+Navigation & Files
+
+Commands: pwd, ls -la, cd -, mkdir -p, touch, cp -r, mv, rm -i, ln -s, tree
+
+
+
+mkdir -p ~/lab/{logs,bin,data}
+cd ~/lab && tree
+touch data/{a.txt,b.txt,c.log} && ls -l data
+cp -r data data_backup && mv data/a.txt data/a1.txt
+ln -s ~/lab/data b-link && ls -l
+
+
+AI-assist prompt:
+“Explain when to use ln -s vs hard links. Give me a quick demo with two files.”
+
+2) Viewing & Editing
+
+Commands: cat, nl, less, head, tail -f, wc -l, nano/vim
+
+
+
+seq 1 200 > data/numbers.txt
+head -n 3 data/numbers.txt
+tail -n 5 data/numbers.txt
+wc -l data/numbers.txt
+
+
+AI-assist prompt:
+“Show me how to follow a growing file with less and tail -f, and when to prefer each.”
+
+3) Search & Text Processing (DevOps gold)
+
+Commands: grep, egrep, find, cut, sort, uniq -c, awk, sed, xargs
+
+Seed some sample logs:
+
+printf "2025-08-25 INFO start\n2025-08-25 ERROR db\n2025-08-25 WARN disk\n" > logs/app.log
+printf "2025-08-25 ERROR timeout\n2025-08-25 INFO ok\n" > logs/web.log
+
+
+
+
+grep -n "ERROR" logs/*.log              # line numbers of errors
+grep -ri "error|fail" logs              # case-insensitive, recursive, regex
+cut -d' ' -f2 logs/app.log | sort | uniq -c | sort -nr   # counts by level
+awk '$2=="ERROR"{print $0}' logs/*.log  # only ERROR lines
+sed -n '1,2p' logs/app.log              # print lines 1-2
+find . -type f -name "*.log" -size +10M -print
+
+
+AI-assist prompt:
+“Given this sample error line: 2025-08-25 15:01:03 [web] ERROR 504 gateway timeout, write a grep -E regex to match only 5xx errors. Then convert it to an awk filter that prints timestamp + code.”
+
+4) Permissions & Ownership
+
+Commands: chmod, chown, umask, stat
+
+
+touch bin/run.sh && echo 'echo OK' > bin/run.sh
+chmod u+x bin/run.sh && ./bin/run.sh
+chmod 754 bin/run.sh && stat -c "%A %n" bin/run.sh
+sudo chown $USER:$USER bin/run.sh
+umask
+
+
+AI-assist prompt:
+“I want a quick reference for chmod numeric vs symbolic with 3 examples each.”
+
+5) Processes, Services & Logs
+
+Commands: ps aux, pgrep, top/htop, kill, systemctl, journalctl
+
+
+
+ps aux | head
+pgrep -a ssh
+sudo systemctl status systemd-journald
+sudo journalctl -p err -b -n 50 --no-pager
+
+
+AI-assist prompt:
+“Given a failing systemd service, outline a 5-step debugging flow using systemctl and journalctl, and produce a small bash snippet that implements it.”
+
+6) Disk, CPU & Memory
+
+Commands: df -h, du -sh *, lsblk, free -h, uptime, ulimit
+
+
+df -h
+du -sh ~/* | sort -h | tail          # biggest folders in home
+free -h
+uptime
+
+
+AI-assist prompt:
+“Turn ‘show the 5 largest files under /var/log’ into a robust one-liner, safe for spaces in filenames.”
+
+7) Compression & Archives
+
+Commands: tar czf, tar xzf, zip, unzip
+
+
+
+tar czf logs.tar.gz logs/
+mkdir restore && tar xzf logs.tar.gz -C restore
+zip -r data.zip data && unzip -l data.zip
+
+
+AI-assist prompt:
+“Create a command that tars only .log files older than 7 days and names the archive with a timestamp.”
+
+8) Networking
+
+Commands: ip a, ip r, ss -tulpn, ping, curl -I, dig, traceroute, nc
+
+
+
+ip a | sed -n '1,20p'
+ss -tulpn | head
+curl -I https://example.com
+dig A example.com +short
+
+
+AI-assist prompt:
+“Give me a one-liner to check HTTP status for a list of URLs from urls.txt using curl in parallel (xargs).”
+
+9) Package Management (Ubuntu)
+
+Commands: apt update, apt install, dpkg -l, apt-cache policy, snap list
+
+
+
+sudo apt update
+apt-cache policy jq
+dpkg -l | grep -i docker || true
+
+
+AI-assist prompt:
+“Explain the difference between apt, apt-get, and dpkg -i with examples.”
+
+10) Scheduling
+
+Commands: crontab -e, crontab -l, systemd timers (overview)
+
+
+# every minute write a timestamp (demo; remove after)
+( crontab -l 2>/dev/null; echo '* * * * * date >> ~/lab/cron_heartbeat.txt' ) | crontab -
+sleep 70 && tail ~/lab/cron_heartbeat.txt
+crontab -r  # remove your demo cron
+
+
+AI-assist prompt:
+“Convert this cron to a systemd timer pair (service + timer) that runs a shell script hourly.”
+
+11) Users, Groups & SSH
+
+Commands: id, whoami, groups, sudo -l, ssh-keygen, ssh-copy-id, scp, rsync
+
+
+id && groups
+ssh-keygen -t ed25519 -f ~/.ssh/devops_key -N ""
+# (use a test VM) ssh-copy-id -i ~/.ssh/devops_key.pub ubuntu@<host>
+# scp file: scp data/b.txt ubuntu@<host>:/tmp/
+
+
 
