@@ -1,16 +1,31 @@
 #Lab 1:
-elif [[ "$PROVIDER" == "mock" ]]; then
-  echo "== LLM Demo (Mock Mode, runs locally) =="
+#!/usr/bin/env bash
+# Simple terminal demo of "how an LLM works"
+# Modes: mock (offline), vertex (Gemini on GCP), openai
+# Dependencies: bash, curl, jq (optional), gcloud (only for vertex)
+
+set -euo pipefail
+
+# ----- Defaults -----
+PROVIDER="${PROVIDER:-mock}"   # mock | vertex | openai
+PROMPT="${1:-"Explain like I'm five: What is CI/CD?"}"
+TEMPERATURE="${TEMPERATURE:-0.2}"
+TOP_P="${TOP_P:-1.0}"
+MAX_TOKENS="${MAX_TOKENS:-256}"
+
+print_header () {
+  echo "== LLM Demo ($1) =="
   echo "Prompt: $PROMPT"
+  echo "Params: temperature=$TEMPERATURE | top_p=$TOP_P | max_tokens=$MAX_TOKENS"
   echo "----------------------------------------"
+}
 
-  # Fake "AI response" – you can edit this as you like
-  echo "🤖 Mock LLM says: Based on your input, here’s a placeholder response."
-  echo "This shows how the script would display an AI answer."
+# ---------------- MOCK MODE ----------------
+if [[ "$PROVIDER" == "mock" ]]; then
+  print_header "Mock Mode (offline)"
+  START=$(date +%s%3N)
 
-  echo "------------------"
-  echo "Latency: 5 ms (simulated)"
-
+  RESPONSE="I'm a local mock LLM. Here's a simple explanation:\n\nCI/CD is a way to automatically build, test, and deliver software so changes reach user
 
 
 #Lab 2 :
