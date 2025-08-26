@@ -25,7 +25,117 @@ if [[ "$PROVIDER" == "mock" ]]; then
   print_header "Mock Mode (offline)"
   START=$(date +%s%3N)
 
-  RESPONSE="I'm a local mock LLM. Here's a simple explanation:\n\nCI/CD is a way to automatically build, test, and deliver software so changes reach user
+  RESPONSE="I'm a local mock LLM. Here's a simple explanation:\n\nCI/CD is a way to automatically build, test, and deliver software so changes reach users faster and safer."
+
+  echo -e "$RESPONSE"
+
+  if (( $(echo "$TEMPERATURE > 0.5" | bc -l) )); then
+    echo -e "\n(creative note) Think of it like a bakery: code is dough, tests are ovens, and CD is the delivery truck!"
+  fi
+  if (( $(echo "$TOP_P < 1.0" | bc -l) )); then
+    echo -e "\n(concise mode) CI checks code; CD ships it."
+  fi
+
+  echo -e "\n(mock) I didn’t call any external API."
+  END=$(date +%s%3N)
+  echo "------------------"
+  echo "Latency: $((END-START)) ms (simulated)"
+  exit 0
+fi
+
+# ---------------- VERTEX AI (Gemini) ----------------
+if [[ "$PROVIDER" == "vertex" ]]; then
+  MODEL="${MODEL:-gemini-1.5-flash}"
+  GCP_PROJECT="${GCP_PROJECT:-}"
+  GCP_LOCATION="${GCP_LOCATION:-us-central1}"
+
+  if ! command -v gcloud >/dev/null 2>&1; then
+    echo "ERROR: gcloud CLI not found. Install and run 'gcloud auth application-default login'." >&2
+    exit 1
+  fi
+  if [[ -z "${GCP_PROJECT}" ]]; then
+    echo "ERROR: set GCP_PROJECT env var (your GCP project ID)." >&2
+    exit 1
+  fi
+
+  print_header "Vertex AI (Gemini: $MODEL)"
+  ACCESS_TOKEN="$(gcloud auth application-default print-access-token)"
+
+  START=$(date +%s%3N)
+  RESP="$(
+    curl -sS -X POST \
+      "https://$GCP_LOCATION-aiplatform.googleapis.com/v1/projects/$GCP_PROJECT/locations/$GCP_LOCATION/publishers/google/models/$MODEL:generateContent" \
+      -H "Authorization: Bearer $ACCESS_TOKEN" \
+      -H "Content-Type: application/json; charset=utf-8" \
+      -d @- <<EOF
+{
+  "contents": [{
+    "role": "user",
+    "parts": [{"text": "$PROMPT"}]
+  }],
+  "generationConfig": {
+    "temperature": $TEMPERATURE,
+    "topP": $TOP_P,
+    "maxOutputTokens": $MAX_TOKENS
+  }
+}
+EOF
+  )"
+  END=$(date +%s%3N)
+
+  echo
+  echo "---- Response ----"
+  if command -v jq >/dev/null 2>&1; then
+    echo "$RESP" | jq -r '.candidates[0].content.parts[0].text // .error.message // "No text content"'
+  else
+    echo "$RESP"
+  fi
+  echo "------------------"
+  echo "Latency: $((END-START)) ms"
+  exit 0
+fi
+
+# ---------------- OPENAI ----------------
+if [[ "$PROVIDER" == "openai" ]]; then
+  MODEL="${MODEL:-gpt-4o-mini}"
+  if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+    echo "ERROR: set OPENAI_API_KEY env var." >&2
+    exit 1
+  fi
+
+  print_header "OpenAI ($MODEL)"
+
+  START=$(date +%s%3N)
+  RESP="$(
+    curl -sS -X POST https://api.openai.com/v1/responses \
+      -H "Authorization: Bearer $OPENAI_API_KEY" \
+      -H "Content-Type: application/json" \
+      -d @- <<EOF
+{
+  "model": "$MODEL",
+  "input": [{"role":"user","content":"$PROMPT"}],
+  "temperature": $TEMPERATURE,
+  "top_p": $TOP_P,
+  "max_output_tokens": $MAX_TOKENS
+}
+EOF
+  )"
+  END=$(date +%s%3N)
+
+  echo
+  echo "---- Response ----"
+  if command -v jq >/dev/null 2>&1; then
+    echo "$RESP" | jq -r '.output[0].content[0].text // .output_text // .error.message // "No text content"'
+  else
+    echo "$RESP"
+  fi
+  echo "------------------"
+  echo "Latency: $((END-START)) ms"
+  exit 0
+fi
+
+echo "ERROR: PROVIDER must be 'mock', 'vertex', or 'openai'." >&2
+exit 1
 
 
 #Lab 2 :
