@@ -1,0 +1,11 @@
+elif [[ "$PROVIDER" == "mock" ]]; then
+  echo "== LLM Demo (Mock Mode, runs locally) =="
+  echo "Prompt: $PROMPT"
+  echo "----------------------------------------"
+
+  # Fake "AI response" – you can edit this as you like
+  echo "🤖 Mock LLM says: Based on your input, here’s a placeholder response."
+  echo "This shows how the script would display an AI answer."
+
+  echo "------------------"
+  echo "Latency: 5 ms (simulated)"
