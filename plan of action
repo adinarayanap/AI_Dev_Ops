@@ -1,1 +1,10 @@
+How ADO Connected to Azure cloud? 
+
+Azure cloud - SO many serivces - Azure vm , VPC VPN, Storage, Db, and azure bricks ...etc 
+
+ADO - Pipelines - How can you deploy any application and api or any application to db - communication happened in between ADO and Azure cloud ?
+
+Ado- Agents - Self build agnet - hosted agents _
+create hosted agent- VM - set up the connection in between Azure cloud and ADO 
+
 
