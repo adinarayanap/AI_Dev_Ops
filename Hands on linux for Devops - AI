@@ -111,3 +111,15 @@ Schedule a cron job that runs python train.py at midnight daily.
 
 Log Analysis Lab
 Use grep + awk + sort to find top error messages in logs.
+
+---------------------------------------------------
+
+Advanced
+
+Week 1: Advanced process, monitoring & systemd
+
+Week 2: Networking + storage (LVM, quotas, namespaces)
+
+Week 3: Security + shell scripting pipelines + JSON/YAML automation
+
+Week 4: Containers internals, DevOps CI/CD automation labs
