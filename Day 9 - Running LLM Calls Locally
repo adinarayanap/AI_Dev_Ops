@@ -1,1 +1,27 @@
+Use context beyond the prompt
 
+Example: A chatbot that answers from your company’s internal PDFs.
+
+LangChain handles: splitting docs → embeddings → vector search → feed into the LLM.
+
+Run multi-step workflows
+
+Example: “Summarize this log file → extract errors → suggest fixes.”
+
+You build a chain to handle these steps automatically.
+
+Enable LLMs to call tools
+
+Example: LLM detects you asked for “top 5 files by size” → calls a shell command → formats the output → replies.
+
+Automate DevOps & business tasks
+
+Auto-generate Jira summaries,
+
+Trigger CI/CD fixes,
+
+Query databases,
+
+Draft emails or reports,
+
+Run SRE playbooks automatically
