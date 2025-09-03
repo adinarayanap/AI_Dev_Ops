@@ -1,1 +1,180 @@
+# Prerequisites
+
+# Update and install basics
+sudo apt-get update -y && sudo apt-get install -y python3-pip python3-venv jq
+
+# (Optional) install kubectl if you want to validate/apply later
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+# Configure AWS (needs bedrock:InvokeModel permission)
+aws configure  # set region (e.g., us-east-1), access key, secret
+
+
+--------------------------------------
+# create a project folder
+mkdir k8s-ai-gen && cd k8s-ai-gen
+python3 -m venv .venv && source .venv/bin/activate
+pip install boto3 pyyaml
+
+
+-----------------------------------------------------------------
+#Create spec.json describing your app.
+
+
+
+{
+  "app_name": "payments-api",
+  "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/payments:1.4.3",
+  "replicas": 3,
+  "container_port": 8080,
+  "service_type": "ClusterIP",
+  "resources": {
+    "requests": {"cpu": "200m", "memory": "256Mi"},
+    "limits":   {"cpu": "500m", "memory": "512Mi"}
+  },
+  "env": {
+    "JAVA_OPTS": "-Xms128m -Xmx384m",
+    "LOG_LEVEL": "info"
+  },
+  "hpa": {
+    "min_replicas": 2,
+    "max_replicas": 8,
+    "cpu_target_percent": 70
+  },
+  "ingress": {
+    "enabled": true,
+    "host": "api.example.com",
+    "path": "/",
+    "tls_secret": "tls-cert"
+  },
+  "namespace": "prod",
+  "extra": "Also add a ConfigMap for LOG_LEVEL and a PodDisruptionBudget (minAvailable 1)."
+}
+
+
+-----------------------------------------------------------------
+#Python script to call Bedrock and write YAML files
+
+Save as gen_k8s.py.
+
+
+#!/usr/bin/env python3
+import os, json, re, sys, argparse, pathlib
+import boto3
+import yaml
+
+DEFAULT_MODEL = os.environ.get("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20240620-v1:0")
+DEFAULT_REGION = os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "us-east-1"
+
+PROMPT_TEMPLATE = """You are a senior Kubernetes platform engineer.
+Generate production-grade Kubernetes manifests based on the following **spec**.
+
+### STRICT REQUIREMENTS
+- Output **only** valid multi-document YAML separated with `---`. No prose or explanations.
+- Include **apiVersion**, **kind**, **metadata.name**, and **metadata.namespace** where relevant.
+- Use fields that are stable in current Kubernetes (no deprecated APIs).
+- Use the given namespace if provided; otherwise default to "default".
+- Respect resource requests/limits, env vars, ports, probes, and autoscaling requests.
+- If ingress.enabled is true, include a valid Ingress (networking.k8s.io/v1).
+- Add labels: app.kubernetes.io/name, app.kubernetes.io/part-of, app.kubernetes.io/managed-by=ai-generator.
+- If Service is present, ensure selectors match the Deployment labels.
+- For HPA, target CPU utilization if provided.
+- If extra asks for ConfigMap/Secret/PDB/etc., include them and wire them.
+
+### SPEC (JSON)
+{spec_json}
+
+### Return:
+Only the YAML manifests, separated by `---`, nothing else.
+"""
+
+def call_bedrock(prompt:str, model_id:str, region:str)->str:
+    client = boto3.client("bedrock-runtime", region_name=region)
+    body = {
+        "anthropic_version": "bedrock-2023-05-31",
+        "max_tokens": 4000,
+        "temperature": 0.2,
+        "messages": [
+            {"role": "user", "content": [{"type": "text", "text": prompt}]}
+        ]
+    }
+    resp = client.invoke_model(modelId=model_id, body=json.dumps(body))
+    payload = json.loads(resp["body"].read())
+    # Claude returns content list with text items
+    return "".join(part.get("text","") for part in payload.get("content", []))
+
+def strip_non_yaml(text:str)->str:
+    # Remove fences if the model added them
+    text = re.sub(r"```yaml|```yml|```", "", text, flags=re.IGNORECASE)
+    return text.strip()
+
+def write_split_yaml(multidoc_yaml:str, outdir:pathlib.Path):
+    outdir.mkdir(parents=True, exist_ok=True)
+    docs = list(yaml.safe_load_all(multidoc_yaml))
+    written = []
+    for i, doc in enumerate(docs, start=1):
+        if not isinstance(doc, dict):  # skip empty
+            continue
+        kind = doc.get("kind","unknown").lower()
+        name = (doc.get("metadata") or {}).get("name","noname").lower()
+        fname = f"{i:02d}-{kind}-{name}.yaml"
+        with open(outdir / fname, "w") as f:
+            yaml.safe_dump(doc, f, sort_keys=False)
+        written.append(fname)
+    return written
+
+def main():
+    ap = argparse.ArgumentParser(description="Generate K8s manifests using AWS Bedrock (Claude).")
+    ap.add_argument("spec_file", help="Path to spec.json")
+    ap.add_argument("--out", default="manifests", help="Output directory for YAMLs")
+    ap.add_argument("--model-id", default=DEFAULT_MODEL, help="Bedrock modelId")
+    ap.add_argument("--region", default=DEFAULT_REGION, help="AWS region")
+    args = ap.parse_args()
+
+    with open(args.spec_file) as f:
+        spec = json.load(f)
+
+    prompt = PROMPT_TEMPLATE.format(spec_json=json.dumps(spec, indent=2))
+    raw = call_bedrock(prompt, args.model_id, args.region)
+    yaml_text = strip_non_yaml(raw)
+
+    outdir = pathlib.Path(args.out)
+    files = write_split_yaml(yaml_text, outdir)
+
+    print(f"\nGenerated {len(files)} manifest file(s) in: {outdir.resolve()}")
+    for f in files:
+        print(" -", f)
+    print("\nTip: Validate with 'kubectl apply --dry-run=client -f {dir}' or apply to your cluster."
+          .format(dir=args.out))
+
+if __name__ == "__main__":
+    main()
+
+
+
+----------------------------------------------------------------------------------------------------
+
+chmod +x gen_k8s.py
+
+export AWS_REGION=us-east-1
+export BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20240620-v1:0  # or another Bedrock model you have access to
+
+./gen_k8s.py spec.json --out manifests
+
+
+
+--------------------------------------------
+
+
+output:
+manifests/
+  01-namespace-prod.yaml
+  02-configmap-payments-api.yaml
+  03-deployment-payments-api.yaml
+  04-service-payments-api.yaml
+  05-hpa-payments-api.yaml
+  06-pdb-payments-api.yaml
+  07-ingress-payments-api.yaml
+
 
