@@ -63,18 +63,3 @@ echo "AI Summary of Errors:"
 echo "$SUMMARY"
 
 
-Here, the script does normal Linux tasks but uses AI to understand the results.
-
-  Usage of Shell Scripting vs AI-Powered Shell Scripting
-Feature	Shell Scripting	AI-Powered Shell Scripting
-Automation	Automates repetitive system/admin tasks	Automates + dynamically decides next steps using AI
-Learning curve	Requires Bash/Linux knowledge	Can be generated from plain English instructions
-Debugging	Manual (trial and error)	AI can explain errors, suggest fixes
-Adaptability	Static – must be coded ahead of time	Dynamic – script can ask AI for decisions at runtime
-Use cases	Backups, deployments, monitoring	Smart log analysis, adaptive automation, natural-language DevOps assistant
-
-In shell
-
-Shell scripting = Automating with Bash.
-
-AI-powered shell scripting = Shell scripting + AI to generate, debug, or enhance automation with natural language and intelligence.
