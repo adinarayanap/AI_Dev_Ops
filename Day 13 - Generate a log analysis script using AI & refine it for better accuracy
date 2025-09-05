@@ -1,0 +1,99 @@
+
+#AI-Assisted Log Analysis Script
+
+import re
+from collections import Counter
+
+# Path to your log file
+LOG_FILE = "application.log"
+
+def analyze_logs(log_file):
+    with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+        logs = f.readlines()
+
+    error_pattern = re.compile(r"(ERROR|Error|error)")
+    warning_pattern = re.compile(r"(WARN|Warning|warn)")
+    info_pattern = re.compile(r"(INFO|Info|info)")
+    response_time_pattern = re.compile(r"response_time=(\d+)ms")
+
+    errors = []
+    warnings = []
+    infos = []
+    response_times = []
+
+    for line in logs:
+        if error_pattern.search(line):
+            errors.append(line.strip())
+        elif warning_pattern.search(line):
+            warnings.append(line.strip())
+        elif info_pattern.search(line):
+            infos.append(line.strip())
+
+        rt_match = response_time_pattern.search(line)
+        if rt_match:
+            response_times.append(int(rt_match.group(1)))
+
+    summary = {
+        "total_lines": len(logs),
+        "errors": len(errors),
+        "warnings": len(warnings),
+        "infos": len(infos),
+        "avg_response_time": sum(response_times) / len(response_times) if response_times else 0,
+        "top_error_messages": Counter([re.sub(r"\d+", "X", e) for e in errors]).most_common(5)
+    }
+
+    return summary, errors, warnings
+
+if __name__ == "__main__":
+    summary, errors, warnings = analyze_logs(LOG_FILE)
+    print("=== Log Summary ===")
+    for k, v in summary.items():
+        print(f"{k}: {v}")
+    
+    print("\nSample Errors:")
+    for e in errors[:5]:
+        print(" -", e)
+
+
+
+----------------------------------------------------------------------------------------------------------------
+
+#Refinement for Better Accuracy (AI-Powered)
+
+
+import openai
+import json
+
+# Requires: pip install openai
+openai.api_key = "YOUR_API_KEY"
+
+def ai_categorize(log_lines, batch_size=10):
+    results = []
+    for i in range(0, len(log_lines), batch_size):
+        batch = log_lines[i:i+batch_size]
+        prompt = f"""You are a log analysis assistant. 
+Classify each log line into one of: ERROR, WARNING, INFO, DEBUG, or OTHER. 
+If possible, summarize the error cause in short.
+Logs:
+{json.dumps(batch, indent=2)}
+Return JSON with 'line', 'category', 'summary' for each.
+"""
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+        try:
+            result = json.loads(response.choices[0].message["content"])
+            results.extend(result)
+        except Exception as e:
+            print("Parse error:", e)
+    return results
+
+if __name__ == "__main__":
+    with open("application.log", "r", encoding="utf-8", errors="ignore") as f:
+        logs = [line.strip() for line in f.readlines() if line.strip()]
+
+    categorized = ai_categorize(logs[:50])  # first 50 lines for demo
+    for entry in categorized:
+        print(f"[{entry['category']}] {entry['line']} → {entry['summary']}")
