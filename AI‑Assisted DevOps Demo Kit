@@ -1,1 +1,9 @@
-
+What will demo (in 8 steps)
+Developer push → GitHub.
+CI (Jenkins or GitHub Actions): lint + unit tests → build & push Docker image.
+AI code review on PR and AI release notes in CI.
+GitOps: Argo CD auto-syncs app to a local Kubernetes (kind) cluster.
+Monitoring: Prometheus + Grafana; app exposes /metrics .
+Synthetic load to trigger metrics.
+AI log triage / metrics summary from your terminal.
+Post‑deploy smoke tests and quick rollback via Git.
