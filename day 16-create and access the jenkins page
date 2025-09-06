@@ -58,5 +58,43 @@ You can install suggested plugins or pick them manually.
 
 
 
+------------------------------------------------------------------------------
+
+AWS linux machine 
+
+
+
+sudo amazon-linux-extras enable corretto17
+sudo yum install -y java-17-amazon-corretto
+
+
+Verify:
+
+java -version
+
+🔹 3. Add Jenkins Repository
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+    https://pkg.jenkins.io/redhat-stable/jenkins.repo
+
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+🔹 4. Install Jenkins
+sudo yum install jenkins -y
+
+🔹 5. Start & Enable Jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+sudo systemctl status jenkins
+
+🔹 6. Allow Jenkins Port (8080)
+
+If firewall (firewalld) is enabled:
+
+sudo firewall-cmd --permanent --add-port=8080/tcp
+sudo firewall-cmd --reload
+
+
+
+
 
 
